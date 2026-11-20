@@ -238,3 +238,18 @@ public struct Video: Decodable, Sendable {
         case mimeType = "mime_type"
     }
 }
+
+// MARK: - Transcrição
+
+public struct Transcription: Decodable, Sendable {
+    public struct Word: Decodable, Sendable {
+        public let word: String
+        public let start: Double?
+        public let end: Double?
+    }
+    public let text: String
+    public let language: String?
+    /// Duração do áudio, em segundos.
+    public let duration: Double?
+    public let words: [Word]?
+}

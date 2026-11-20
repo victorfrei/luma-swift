@@ -118,6 +118,36 @@ public actor LumaSdk {
         return try await send("POST", "/rerank", body: Body(query: query, documents: documents))
     }
 
+    // MARK: - Transcrição
+
+    /// Transcreve um áudio (dados do arquivo) e devolve o texto.
+    public func transcribe(audio: Data, filename: String = "audio.m4a", mimeType: String = "audio/mp4", language: String? = nil) async throws -> Transcription {
+        let boundary = "luma-\(UUID().uuidString)"
+        var body = Data()
+        func field(_ name: String, _ value: String) {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        if let language { field("language", language) }
+        field("response_format", "verbose_json")
+        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\nContent-Type: \(mimeType)\r\n\r\n".utf8))
+        body.append(audio)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        var req = try await makeRequest("POST", "/audio/transcriptions")
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        req.httpBody = body
+        let (data, res) = try await session.data(for: req)
+        let status = (res as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else { throw Self.fail(data, status) }
+        return try JSONDecoder().decode(Transcription.self, from: data)
+    }
+
+    /// Transcreve um áudio já hospedado (URL https).
+    public func transcribe(audioUrl: String, language: String? = nil) async throws -> Transcription {
+        struct Body: Encodable { let audio_url: String; let language: String?; let response_format = "verbose_json" }
+        return try await send("POST", "/audio/transcriptions", body: Body(audio_url: audioUrl, language: language))
+    }
+
     // MARK: - Imagem / vídeo
 
     /// Gera uma imagem e espera ficar pronta (pode levar alguns segundos).

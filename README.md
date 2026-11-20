@@ -66,6 +66,17 @@ let r = try await luma.rerank(query: "reembolso", documents: ["Frete em 3 dias."
 // r.results: index + relevanceScore, do mais ao menos relevante
 ```
 
+## Transcrição de áudio
+
+```swift
+let t = try await luma.transcribe(audio: try Data(contentsOf: url), filename: "nota.m4a", language: "pt")
+print(t.text)
+
+let remoto = try await luma.transcribe(audioUrl: "https://exemplo.com/reuniao.mp3")
+```
+
+Cobrado por segundo de áudio. Limite de 100 MB por arquivo.
+
 ## Imagens e vídeos
 
 ```swift
